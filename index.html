@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-al-scale=1.0">
-    <title>RTF to Plain Text | Privacy-First Converter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTF to Plain Text Converter</title>
     <style>
         :root {
             --primary-bg: #1a1a2e;
@@ -17,18 +17,34 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--primary-bg);
+            background-image: url('https://images.nasa.gov/images/as17-148-22727_orig.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
             color: var(--light-text);
-            line-height: 1.6;
             min-height: 100vh;
             padding: 20px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1;
         }
 
         .container {
+            position: relative;
+            z-index: 2;
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
@@ -42,6 +58,7 @@
         .header h1 {
             color: var(--text-color);
             margin-bottom: 10px;
+            font-size: 2.5rem;
         }
 
         .converter-box {
@@ -49,18 +66,22 @@
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
-        }
-
-        .input-section, .output-section {
-            background-color: var(--secondary-bg);
+            background: rgba(22, 33, 62, 0.95);
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
+        .input-section, .output-section {
+            padding: 20px;
+            border-radius: 10px;
+            background: rgba(15, 52, 96, 0.5);
+        }
+
         .section-title {
             color: var(--text-color);
             margin-bottom: 15px;
+            font-size: 1.2rem;
         }
 
         textarea {
@@ -69,7 +90,7 @@
             padding: 15px;
             border: 2px solid var(--accent-color);
             border-radius: 5px;
-            background-color: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.05);
             color: var(--light-text);
             font-size: 16px;
             resize: vertical;
@@ -79,34 +100,47 @@
         textarea:focus {
             outline: none;
             border-color: var(--text-color);
+            box-shadow: 0 0 0 2px rgba(233, 69, 96, 0.2);
         }
 
         .button-group {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         button {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
-            bordorder-radius: 5px;
+            border-radius: 5px;
             background-color: var(--text-color);
             color: var(--light-text);
             cursor: pointer;
-            transition: transform 0.3s ease, background-color 0.3s ease;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         button:hover {
             transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             background-color: #d13553;
         }
 
         .privacy-notice {
-            background-color: var(--secondary-bg);
+            background: rgba(22, 33, 62, 0.95);
             padding: 20px;
             border-radius: 10px;
             margin-top: 30px;
             border-left: 4px solid var(--text-color);
+        }
+
+        .privacy-notice h3 {
+            color: var(--text-color);
+            margin-bottom: 10px;
         }
 
         .view-counter {
@@ -114,15 +148,36 @@
             margin-top: 20px;
             color: var(--text-color);
             font-size: 0.9em;
+            background: rgba(22, 33, 62, 0.95);
+            padding: 10px;
+            border-radius: 5px;
         }
 
         footer {
             text-align: center;
             margin-top: 40px;
             padding-top: 20px;
-            border-top: 1px solid var(--accent-color);
+            border-top: 1px solid rgba(233, 69, 96, 0.3);
             color: var(--light-text);
             opacity: 0.8;
+        }
+
+        .success {
+            animation: flash-success 1s;
+        }
+
+        .error {
+            animation: flash-error 1s;
+        }
+
+        @keyframes flash-success {
+            0%, 100% { border-color: va var(--accent-color); }
+            50% { border-color: #28a745; }
+        }
+
+        @keyframes flash-error {
+            0%, 100% { border-color: var(--accent-color); }
+            50% { border-color: #dc3545; }
         }
 
         @media (max-width: 768px) {
@@ -132,6 +187,10 @@
             
             .header h1 {
                 font-size: 1.8rem;
+            }
+
+            button {
+                width: 100%;
             }
         }
     </style>
@@ -148,8 +207,13 @@
                 <h2 class="section-title">RTF Input</h2>
                 <textarea id="rtfInput" placeholder="Paste your RTF content here..."></textarea>
                 <div class="button-group">
-                    <button onclick="convertText()">Convert</button>
-                    <button onclick="clearInput()">Clear</button>
+                    <button onclick="convertText()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
+                        </svg>
+                        Convert
+                    </button>
+                    <button onclick="clearInput()">Clear Input</button>
                 </div>
             </div>
 
@@ -157,8 +221,14 @@
                 <h2 class="section-title">Plain Text Output</h2>
                 <textarea id="plainOutput" readonly placeholder="Converted text will appear here..."></textarea>
                 <div class="button-group">
-                    <button onclick="copyToClipboard()">Copy to Clipboard</button>
-                    <button onclick="clearOutput()">Clear</button>
+                    <button onclick="copyToClipboard()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+                            <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+                        </svg>
+                        Copy to Clipboard
+                    </button>
+                    <button onclick="clearOutput()">Clear Output</button>
                 </div>
             </div>
         </div>
@@ -186,25 +256,111 @@
             document.getElementById('viewCount').textContent = views;
         });
 
-        // RTF conversion function
+        function rtfToPlainText(rtf) {
+            if (!rtf) return '';
+            
+            let skipTables = true;
+            let bracketCount = 0;
+            let plainText = '';
+            let isContent = false;
+            let skipChars = 0;
+            
+            for (let i = 0; i < rtf.length; i++) {
+                if (skipChars > 0) {
+                    skipChars--;
+                    continue;
+                }
+
+                const char = rtf[i];
+                
+                // Handle nested brackets
+                if (char === '{') {
+                    bracketCount++;
+                    continue;
+                }
+                if (char === '}') {
+                    bracketCount--;
+                    continue;
+                }
+                
+                // Handle control words
+                if (char === '\\') {
+                    let j = i + 1;
+                    let controlWord = '';
+                    
+                    // Extract control word
+                    while (j < rtf.length && /[a-zA-Z]/.test(rtf[j])) {
+                        controlWord += rtf[j];
+                        j++;
+                    }
+
+                    // Handle special control words
+                    switch (controlWord) {
+                        case 'par':
+                        case 'line':
+                            plainText += '\n';
+                            break;
+                        case 'tab':
+                            plainText += '\t';
+                            break;
+                        case 'u':
+                            // Handle Unicode characters
+                            let num = '';
+                            while (j < rtf.length && /[0-9-]/.test(rtf[j])) {
+                                num += rtf[j];
+                                j++;
+                            }
+                            if (num) {
+                                plainText += String.fromCharCode(parseInt(num, 10));
+                                skipChars = 1; // Skip the translation character
+                            }
+                            break;
+                    }
+                    
+                    i = j - 1;
+                    continue;
+                }
+                
+                // Skip font table and other formatting
+                if (skipTables && bracketCount > 0) {
+                    continue;
+                }
+                
+                // Add regular characters
+                if (!skipTables && /[\x20-\x7E\u0080-\uFFFF]/.test(char)) {
+                    plainText += char;
+                }
+                
+                // Start capturing content after initial formatting
+                if (char === ';') {
+                    skipTables = false;
+                }
+            }
+            
+            // Clean up the text
+            return plainText
+                .replace(/\s+/g, ' ')
+                .replace(/\n\s*\n/g, '\n\n')
+                .replace(/^\s+|\s+$/g, '')
+                .trim();
+        }
+
         function convertText() {
-            const rtfInput = document.getElementById('rtfInput').value;
+            const rtfInput = document.getElementById('rtfInput');
             const plainOutput = document.getElementById('plainOutput');
             
             try {
-                // Simple RTF stripping (basic implementation)
-                let plainText = rtfInput
-                    .replace(/{\*?\\[^{}]+}|[{}]|\\\n?[A-Za-z]+\n?(?:-?\d+)?[ ]?/g, '')
-                    .replace(/\\'[0-9a-f]{2}/g, '')
-                    .trim();
-                
+                const plainText = rtfToPlainText(rtfInput.value);
                 plainOutput.value = plainText;
+                plainOutput.classList.add('success');
+                setTimeout(() => plainOutput.classList.remove('success'), 1000);
             } catch (error) {
-                plainOutput.value = 'Error converting text. Please check your input.';
+                plainOutput.value = 'Error converting text: ' + error.message;
+                plainOutput.classList.add('error');
+                setTimeout(() => plainOutput.classList.remove('error'), 1000);
             }
         }
 
-        // Utility functions
         function clearInput() {
             document.getElementById('rtfInput').value = '';
         }
@@ -215,9 +371,24 @@
 
         function copyToClipboard() {
             const plainOutput = document.getElementById('plainOutput');
+            if (!plainOutput.value) return;
+            
             plainOutput.select();
             document.execCommand('copy');
-            alert('Text copied to clipboard!');
+            
+            // Visual feedback
+            const copyButton = event.target.closest('button');
+            const originalText = copyButton.innerHTML;
+            copyButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+                </svg>
+                Copied!
+            `;
+            
+            setTimeout(() => {
+                copyButton.innerHTML = originalText;
+            }, 2000);
         }
     </script>
 </body>
