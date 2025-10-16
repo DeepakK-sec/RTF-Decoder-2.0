@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTF to Plain Text Converter</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --text-color: #333;
+            --light-color: #ecf0f1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            background-image: url('images/background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        .converter-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-area, .output-area {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 1rem;
+            border: 2px solid var(--secondary-color);
+            border-radius: 5px;
+            resize: vertical;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            background-color: var(--accent-color);
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .disclaimer {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffeeba;
+            padding: 1rem;
+            margin: 2rem 0;
+        }
+
+        .view-counter {
+            text-align: center;
+            padding: 1rem;
+            background-color: var(--light-color);
+            border-radius: 5px;
+            margin-top: 2rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1rem;
+            margin-top: 2rem;
+            border-top: 1px solid var(--secondary-color);
+        }
+
+        @media (max-width: 768px) {
+            .converter-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>RTF to Plain Text Converter</h1>
+            <p>Convert your RTF documents to clean plain text</p>
+        </header>
+
+        <div class="disclaimer">
+               <strong>Privacy Notice:</strong>
+            <p>This tool processes RTF content directly in your browser. No data is sent to any server - your content stays private!</p>
+        </div>
+
+        <main class="converter-section">
+            <div class="input-area">
+                <h2>RTF Input</t</h2>
+                <textarea id="rtfInput" placeholder="Paste your RTF content here..."></textarea>
+                <div class="button-group">
+                    <button onclick="convertText()">Convert</button>
+                    <button onclick="clearInput()">Clear</button>
+                </div>
+            </div>
+
+            <div class="output-area">
+                <h2>Plain Text Output</h2>
+                <textarea id="plainOutput" readonly></textarea>
+                <div class="button-group">
+                    <button onclick="copyToClipboard()">Copy to Clipboard</button>
+                    <button onclick="downloadText()">Download</button>
+                </div>
+            </div>
+        </main>
+
+        <div class="view-counter">
+ >
+            Page Views: <span id="viewCount">0</span>
+        </div>
+
+        <footer>
+            <p>&copy; 2024 RTF Converter. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        // View Counter Implementation using localStorage
+        document.addEventListener('DOMContentLoaded', () => {
+            let views = localStorage.getItem('pageViews') || 0;
+            views = parseInt(views) + 1;
+            localStorage.setItem('pageViews', views);
+            document.getElementById('viewCount').textContent = views;
+        });
+
+        // RTF to Plain Text Conversion
+        function rtfToPlainText(rtf) {
+            if (!rtf) return '';
+            
+            let text = rtf;
+            
+            // Remove RTF formatting
+            text = text.replace(/{\*?\\[^{}]+}|[{}]|\\\n?[A-Za-z]+\n?(?:-?\d+)?[ ]?/g, '');
+            
+            // Handle special characters
+            text = text.replace(/\\'([0-9a-fA-F]{2})/g, (match, hex) => {
+                return String.fromCharCode(parseInt(hex, 16));
+            });
+            
+            // Clean up
+            text = text.replace(/\s+/g, ' ').trim();
+            
+            return text;
+        }
+
+        // Button Functions
+        function convertText() {
+            const rtfInput = document.getElementById('rtfInput');
+            const plainOutput = document.getElementById('plainOutput');
+            
+            try {
+                const plainText = rtfToPlainText(rtfInput.value);
+                plainOutput.value = plainText;
+            } catch (error) {
+                alert('Error converting text: ' + error.message);
+            }
+        }
+
+        function clearInput() {
+            document.getElementById('rtfInput').value = '';
+            document.getElementById('plainOutput').value = '';
+        }
+
+        function copyToClipboard() {
+            const plainOutput = document.getElementById('plainOutput');
+            plainOutput.select();
+            document.execCommand('copy');
+            alert('Text copied to clipboard!');
+        }
+
+        function downloadText() {
+            const text = document.getElementById('plainOutput').value;
+            if (!text) {
+                alert('No text to download!');
+                return;
+            }
+
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'converted-text.txt';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
