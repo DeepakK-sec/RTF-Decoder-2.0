@@ -257,92 +257,95 @@
         });
 
         function rtfToPlainText(rtf) {
-            if (!rtf) return '';
-            
-            let skipTables = true;
-            let bracketCount = 0;
-            let plainText = '';
-            let isContent = false;
-            let skipChars = 0;
-            
-            for (let i = 0; i < rtf.length; i++) {
-                if (skipChars > 0) {
-                    skipChars--;
-                    continue;
-                }
+    if (!rtf) return '';
+    
+    // Create character conversion map
+    const charMap = new Map();
+    for (let i = 0; i < 256; i++) {
+        charMap.set(i, String.fromCharCode(i));
+    }
 
-                const char = rtf[i];
-                
-                // Handle nested brackets
-                if (char === '{') {
-                    bracketCount++;
-                    continue;
-                }
-                if (char === '}') {
-                    bracketCount--;
-                    continue;
-                }
-                
-                // Handle control words
-                if (char === '\\') {
-                    let j = i + 1;
-                    let controlWord = '';
-                    
-                    // Extract control word
-                    while (j < rtf.length && /[a-zA-Z]/.test(rtf[j])) {
-                        controlWord += rtf[j];
-                        j++;
-                    }
+    let result = '';
+    let inControl = false;
+    let inGroup = 0;
+    let unicode = '';
+    let unicodeLength = 0;
 
-                    // Handle special control words
-                    switch (controlWord) {
-                        case 'par':
-                        case 'line':
-                            plainText += '\n';
-                            break;
-                        case 'tab':
-                            plainText += '\t';
-                            break;
-                        case 'u':
-                            // Handle Unicode characters
-                            let num = '';
-                            while (j < rtf.length && /[0-9-]/.test(rtf[j])) {
-                                num += rtf[j];
-                                j++;
-                            }
-                            if (num) {
-                                plainText += String.fromCharCode(parseInt(num, 10));
-                                skipChars = 1; // Skip the translation character
-                            }
-                            break;
-                    }
-                    
-                    i = j - 1;
-                    continue;
-                }
-                
-                // Skip font table and other formatting
-                if (skipTables && bracketCount > 0) {
-                    continue;
-                }
-                
-                // Add regular characters
-                if (!skipTables && /[\x20-\x7E\u0080-\uFFFF]/.test(char)) {
-                    plainText += char;
-                }
-                
-                // Start capturing content after initial formatting
-                if (char === ';') {
-                    skipTables = false;
-                }
+    for (let i = 0; i < rtf.length; i++) {
+        let char = rtf[i];
+
+        // Handle groups
+        if (char === '{') {
+            inGroup++;
+            continue;
+        }
+        if (char === '}') {
+            inGroup--;
+            continue;
+        }
+
+        // Handle control words
+        if (char === '\\') {
+            let controlWord = '';
+            let parameter = '';
+            i++;
+
+            // Read control word
+            while (i < rtf.length && /[a-zA-Z]/.test(rtf[i])) {
+                controlWord += rtf[i];
+                i++;
             }
-            
-            // Clean up the text
-            return plainText
-                .replace(/\s+/g, ' ')
-                .replace(/\n\s*\n/g, '\n\n')
-                .replace(/^\s+|\s+$/g, '')
-                .trim();
+
+            // Read parameter if any
+            if (rtf[i] === '-') {
+                parameter += '-';
+                i++;
+            }
+            while (i < rtf.length && /[0-9]/.test(rtf[i])) {
+                parameter += rtf[i];
+                i++;
+            }
+
+            // Handle special control words
+            switch (controlWord) {
+                case 'u':
+                    // Unicode character
+                    const code = parseInt(parameter);
+                    result += String.fromCharCode(code);
+                    // Skip next character (RTF Unicode escape sequence)
+                    i++;
+                    break;
+                case 'par':
+                case 'line':
+                    result += '\n';
+                    break;
+                case "'":
+                    // Hex encoded character
+                    const hex = rtf.substr(i, 2);
+                    i += 1;
+                    result += String.fromCharCode(parseInt(hex, 16));
+                    break;
+            }
+
+            // Skip space after control worword
+            if (rtf[i] === ' ') continue;
+            i--;
+            continue;
+        }
+
+        // Add regular characters
+        if (!inControl && char >= ' ' && char <= '~') {
+            result += char;
+        }
+    }
+ }
+
+    // Clean up the text
+    return result
+        .replace(/\s+/g, ' ')
+        .replace(/\n\s*\n/g, '\n\n')
+        .trim();
+        
         }
 
         function convertText() {
