@@ -169,36 +169,115 @@
 
         // RTF to Plain Text Conversion
         function rtfToPlainText(rtf) {
-            if (!rtf) return '';
-            
-            let text = rtf;
-            
-            // Remove RTF formatting
-            text = text.replace(/{\*?\\[^{}]+}|[{}]|\\\n?[A-Za-z]+\n?(?:-?\d+)?[ ]?/g, '');
-            
-            // Handle special characters
-            text = text.replace(/\\'([0-9a-fA-F]{2})/g, (match, hex) => {
-                return String.fromCharCode(parseInt(hex, 16));
-            });
-            
-            // Clean up
-            text = text.replace(/\s+/g, ' ').trim();
-            
-            return text;
+    if (!rtf) return '';
+
+    // Stack to handle nested groups
+    const stack = [];
+    let plainText = '';
+    let skipChars = 0;
+    let inControlWord = false;
+
+    function isControlWordChar(char) {
+        return /[a-zA-Z]/.test(char);
+    }
+
+    for (let i = 0; i < rtf.length; i++) {
+        if (skipChars > 0) {
+            skipChars--;
+            continue;
         }
 
-        // Button Functions
-        function convertText() {
-            const rtfInput = document.getElementById('rtfInput');
-            const plainOutput = document.getElementById('plainOutput');
-            
-            try {
-                const plainText = rtfToPlainText(rtfInput.value);
-                plainOutput.value = plainText;
-            } catch (error) {
-                alert('Error converting text: ' + error.message);
+        const char = rtf[i];
+
+        switch (char) {
+            case '\\': {
+                let controlWord = '';
+                let parameter = '';
+                let j = i + 1;
+
+                // Extract control word
+                while (j < rtf.length && isControlWordChar(rtf[j])) {
+                    controlWord += rtf[j];
+                    j++;
+                }
+
+                // Extract parameter if any
+                if (j < rtf.length && rtf[j] === '-') {
+                    parameter += '-';
+                    j++;
+                }
+                while (j < rtf.length && /[0-9]/.test(rtf[j])) {
+                    parameter += rtf[j];
+                    j++;
+                }
+
+                // Handle special cases
+                switch (controlWord) {
+                    case 'par':
+                    case 'line':
+                        plainText += '\n';
+                        break;
+                    case 'tab':
+                        plainText += '\t';
+                        break;
+                    case 'u':
+                        if (parameter) {
+                            plainText += String.fromCharCode(Math.abs(parseInt(parameter)));
+                            skipChars = 1; // Skip the translation character
+                        }
+                        break;
+                }
+
+                // Skip the control word and its parameter
+                skipChars = (j - i - 1);
+                break;
             }
+            case '{':
+                stack.push(plainText.length);
+                break;
+            case '}':
+                if (stack.length > 0) {
+                    stack.pop();
+                }
+                break;
+            case '\n':
+            case '\r':
+                // Ignore direct line breaks in RTF
+                break;
+            default:
+                // Only add printable characters
+                if (char >= ' ' && !inControlWord) {
+                    plainText += char;
+                }
         }
+    }
+
+    // Clean up the resulting text
+    return plainText
+        .replace(/\n\s*\n/g, '\n\n') // Replace multiple line breaks with double line breaks
+        .replace(/  +/g, ' ') // Replace multiple spaces with single space
+        .trim();
+}
+
+        // Button Functions
+        function convertText() function convertText() {
+    const rtfInput = document.getElementById('rtfInput');
+    const plainOutput = document.getElementById('plainOutput');
+    
+    try {
+        const plainText = rtfToPlainText(rtfInput.value);
+        plainOutput.value = plainText;
+        
+        // Add success feedback
+        plainOutput.classList.add('success');
+        setTimeout(() => plainOutput.classList.remove('success'), 1000);
+    } catch (error) {
+        // Add error feedback
+        plainOutput.value = 'Error converting text: ' + error.message;
+        plainOutput.classList.add('error');
+        setTimeout(() => plainOutput.classList.remove('error'), 1000);
+    }
+}
 
         function clearInput() {
             document.getElementById('rtfInput').value = '';
